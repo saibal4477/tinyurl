@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # [START gae_python38_app]
+import os
 from flask import Flask 
 from flask import request
 from db import createEntry
@@ -51,5 +52,8 @@ if __name__ == '__main__':
     # This is used when running locally only. When deploying to Google App
     # Engine, a webserver process such as Gunicorn will serve the app. This
     # can be configured by adding an `entrypoint` to app.yaml.
+
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\saiba\\system_design_projects\\tinyurl\\key.json'
+
     app.run(host='127.0.0.1', port=8080, debug=True)
 # [END gae_python38_app]
