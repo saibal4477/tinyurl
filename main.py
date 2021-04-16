@@ -14,9 +14,17 @@
 
 # [START gae_python38_app]
 import os
-from flask import Flask 
-from flask import request
-from db import createEntry
+from flask import Flask, request, jsonify, redirect
+from instance_mgr import InstanceManager
+from piddy_exception import PiddyurlException
+from hash_gen import HashGenerator
+from db import DbManager
+from cache_mgr import CacheManager
+
+# global instances
+instance_mgr = InstanceManager()
+db_mgr = DbManager()
+cache_mgr=CacheMgr()
 
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
@@ -24,15 +32,51 @@ from db import createEntry
 app = Flask(__name__)
 
 
-@app.route('/create')
-def craeteURL():
-    """Return a friendly HTTP greeting."""
+@app.before_first_request
+def before_first_request_func():
+    pass
 
-    # Check whether the database has one such entry 
-    url_name = request.args.get('url', default = '*', type = str)
-    user_id = request.args.get('user', default = '*', type = str)
-    createEntry(url_name,user_id)
-    return 'Hello World!'
+
+@app.errorhandler(PiddyurlException)
+def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
+
+
+@app.route('/create')
+def createURL():
+    """Return a friendly HTTP greeting."""
+    # Check whether the database has one such entry
+    url_name = request.args.get('url', default='*', type=str)
+    user_id = request.args.get('user', default='*', type=str)
+
+    # validate the url and the user name
+    if url_name == '*':
+        raise PiddyurlException('No URL is passed')
+    if url_name == '*':
+        raise PiddyurlException('No user id is passed')
+
+    # get the instance
+    instance_id = instance_mgr.getInstanceID()
+    latest = instance_mgr.getLatest()
+
+    # check if it exists in db
+    url_map=db_mgr.checkEntry(url_name,user_id)
+    if url_map is not None:
+        updated_url = 'http://' + request.host + '/' +  url_map['map_url']
+        return jsonify({'status': 'success', 'url': url_name, 'piddyurl': updated_url})
+
+    # generate the hash
+    new_hash = HashGenerator.generateNext(instance_id, latest)
+
+    # update the entry into db
+    instance_mgr.updateLatest(new_hash)
+    db_mgr.createEntry(url_name, user_id, new_hash)
+
+    updated_url = 'http://' + request.host + '/' + new_hash
+    return jsonify({'status': 'success', 'url': url_name, 'piddyurl': updated_url})
+
 
 @app.route('/delete')
 def deleteURL():
@@ -40,12 +84,16 @@ def deleteURL():
 
     return 'Hello World!'
 
-@app.route('/redirect')
-def redirectURL():
-    """Return a friendly HTTP greeting."""
 
-    return 'Hello World!'
+# @app.route('/', defaults={'path': ''})
+@app.route('/<path>')
+def redirectURL(path):
+    # check in the cache
 
+    url = db_mgr.findMap(path)
+    if url:
+        return redirect(url['url'])
+    return jsonify({'status': 'fail', 'url': path, 'reason' : 'not found'})
 
 
 if __name__ == '__main__':
@@ -55,5 +103,7 @@ if __name__ == '__main__':
 
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\saiba\\system_design_projects\\tinyurl\\key.json'
 
-    app.run(host='127.0.0.1', port=8080, debug=True)
+    app.run(host='127.0.0.1', port=8088, debug=True)
+
+
 # [END gae_python38_app]

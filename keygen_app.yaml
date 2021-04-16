@@ -1,0 +1,3 @@
+runtime: python38
+service: keygen
+entrypoint: gunicorn -b :$PORT -b :2222 keygen:app

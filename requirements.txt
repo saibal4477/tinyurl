@@ -1,2 +1,5 @@
 Flask==1.1.2
 google-cloud-datastore
+google-api-python-client
+pika
+kazoo
