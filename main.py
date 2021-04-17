@@ -24,7 +24,7 @@ from cache_mgr import CacheManager
 # global instances
 instance_mgr = InstanceManager()
 db_mgr = DbManager()
-cache_mgr=CacheMgr()
+cache_mgr=CacheManager()
 
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
@@ -88,10 +88,14 @@ def deleteURL():
 # @app.route('/', defaults={'path': ''})
 @app.route('/<path>')
 def redirectURL(path):
-    # check in the cache
+    # check the cache
+    url=cache_mgr.get(path)
+    if url:
+        return redirect(url)
 
     url = db_mgr.findMap(path)
     if url:
+        cache_mgr.set(path,url)
         return redirect(url['url'])
     return jsonify({'status': 'fail', 'url': path, 'reason' : 'not found'})
 

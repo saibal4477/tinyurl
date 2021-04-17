@@ -2,6 +2,7 @@ from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError, KazooException
 from piddy_exception import PiddyurlException
 import logging
+import os
 
 
 class InstanceManager:
@@ -9,13 +10,14 @@ class InstanceManager:
         self.zk = None
         self.instance_id = -1
         self.latest = ''
-        self.zkpath = '/piddyurl/frontend/1.6/instance'
+        self.zkpath = '/piddyurl/frontend/1.0/instance'
+        self.host_name = os.environ.get('ZK_HOST', '127.0.0.1')
 
     def connect(self):
         try:
             logging.basicConfig()
-            HOSTS = '127.0.0.1'
-            self.zk = KazooClient(hosts=HOSTS)
+
+            self.zk = KazooClient(hosts=self.host_name)
             self.zk.start()
         except KazooException as ex:
             raise PiddyurlException('The web server is not initialized properly [' + str(ex) + ']', status_code=410)
