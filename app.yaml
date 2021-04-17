@@ -1,7 +1,7 @@
 runtime: python38
 service: default
-env_variable:
-  REDIS_HOST:10.143.241.19
-  REDIS_PORT:6379
-  ZK_HOST:35.199.151.146
+env_variables:
+  REDIS_HOST: 10.143.241.19
+  REDIS_PORT: 6379
+  ZK_HOST: 35.199.151.146
 
