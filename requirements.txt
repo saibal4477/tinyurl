@@ -1,6 +1,8 @@
-Flask==1.1.2
+flask
 google-cloud-datastore
 google-api-python-client
-pika
 kazoo
 redis
+gunicorn
+happybase
+python-logstash

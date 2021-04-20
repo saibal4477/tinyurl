@@ -11,12 +11,12 @@ class InstanceManager:
         self.instance_id = -1
         self.latest = ''
         self.zkpath = '/piddyurl/frontend/1.0/instance'
-        self.host_name = os.environ.get('ZK_HOST', '127.0.0.1')
+        self.host_name = os.environ.get('ZK_HOST', 'zk')
 
-    def connect(self):
+    def __connect(self):
+        if self.zk and self.zk.connected:
+            return
         try:
-            logging.basicConfig()
-
             self.zk = KazooClient(hosts=self.host_name)
             self.zk.start()
         except KazooException as ex:
@@ -24,14 +24,9 @@ class InstanceManager:
 
     def getInstanceID(self):
         # if not connected then reconnect
-        if self.zk and self.zk.connected and self.instance_id != -1:
+        self.__connect()
+        if self.instance_id != -1:
             return self.instance_id
-
-        if not self.zk:
-            self.connect()
-
-        if not self.zk.connected:
-            self.connect()
 
         # create the node for the first time
         try:
@@ -79,10 +74,10 @@ class InstanceManager:
         return self.instance_id
 
     def getLatest(self):
-        if self.zk and self.zk.connected and self.latest != '':
+        self.__connect()
+        if  self.latest != '':
             return self.latest
 
-        self.connect()
         try:
             data, _ = self.zk.get(path=self.zkpath + '/' + str(self.instance_id) + '/latest')
             self.latest = data.decode('utf-8')
@@ -91,6 +86,7 @@ class InstanceManager:
             raise PiddyurlException('Cannot get the latest field from the ZooKeeper [', str(ex) + ']')
 
     def updateLatest(self, latest):
+        self.__connect()
         try:
             self.latest = latest
             self.zk.set(path=self.zkpath + '/' + str(self.instance_id) + '/latest', value=self.latest.encode('ascii'))

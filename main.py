@@ -18,13 +18,17 @@ from flask import Flask, request, jsonify, redirect
 from instance_mgr import InstanceManager
 from piddy_exception import PiddyurlException
 from hash_gen import HashGenerator
-from db import DbManager
+from db import DbManager, DBManagerHbase
 from cache_mgr import CacheManager
+from log_manager import LogManager
+import logging
+import logstash
 
 # global instances
 instance_mgr = InstanceManager()
-db_mgr = DbManager()
+db_mgr = DBManagerHbase()
 cache_mgr=CacheManager()
+log_mgr=LogManager()
 
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
@@ -34,8 +38,7 @@ app = Flask(__name__)
 
 @app.before_first_request
 def before_first_request_func():
-    pass
-
+    log_mgr.getLogger().info("Initialized instance")
 
 @app.errorhandler(PiddyurlException)
 def handle_invalid_usage(error):
@@ -63,6 +66,7 @@ def createURL():
 
     # check if it exists in db
     url_map=db_mgr.checkEntry(url_name,user_id)
+    log_mgr.getLogger.info (url_map)
     if url_map is not None:
         updated_url = 'http://' + request.host + '/' +  url_map['map_url']
         return jsonify({'status': 'success', 'url': url_name, 'piddyurl': updated_url})
@@ -84,12 +88,18 @@ def deleteURL():
 
     return 'Hello World!'
 
+@app.route('/')
+def defaultURL():
+    return "welcome"
 
 # @app.route('/', defaults={'path': ''})
 @app.route('/<path>')
 def redirectURL(path):
+
+    #return "hello world"
     # check the cache
     url=cache_mgr.get(path)
+    print (url)
     if url:
         return redirect(url)
 
@@ -107,7 +117,7 @@ if __name__ == '__main__':
 
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\saiba\\system_design_projects\\tinyurl\\key.json'
 
-    app.run(host='127.0.0.1', port=8088, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 
 # [END gae_python38_app]
