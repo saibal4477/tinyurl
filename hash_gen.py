@@ -6,7 +6,7 @@ class HashGenerator:
         next_token = ''
         carry = True
         l1 = latest[::-1]
-        for i in range(len(l1)):
+        for i in range(1,len(l1)):
             if carry:
                 if l1[i] == '9':
                     next_token += '0'

@@ -28,7 +28,7 @@ import logstash
 instance_mgr = InstanceManager()
 db_mgr = DBManagerHbase()
 cache_mgr=CacheManager()
-log_mgr=LogManager()
+log_mgr=LogManager()#'logstash')
 
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
@@ -66,7 +66,7 @@ def createURL():
 
     # check if it exists in db
     url_map=db_mgr.checkEntry(url_name,user_id)
-    log_mgr.getLogger.info (url_map)
+    log_mgr.getLogger().info(url_map)
     if url_map is not None:
         updated_url = 'http://' + request.host + '/' +  url_map['map_url']
         return jsonify({'status': 'success', 'url': url_name, 'piddyurl': updated_url})
@@ -78,7 +78,7 @@ def createURL():
     instance_mgr.updateLatest(new_hash)
     db_mgr.createEntry(url_name, user_id, new_hash)
 
-    updated_url = 'http://' + request.host + '/' + new_hash
+    updated_url = 'http://' + request.host + '/redirect?url=' + new_hash
     return jsonify({'status': 'success', 'url': url_name, 'piddyurl': updated_url})
 
 
@@ -93,21 +93,27 @@ def defaultURL():
     return "welcome"
 
 # @app.route('/', defaults={'path': ''})
-@app.route('/<path>')
-def redirectURL(path):
+@app.route('/redirect')
+def redirectURL():
+    url_name = request.args.get('url', default='*', type=str)
+    log_mgr.getLogger().info('redirect-page:'+url_name)
+    if url_name == '*':
+        raise PiddyurlException('No URL is passed')
 
     #return "hello world"
     # check the cache
-    url=cache_mgr.get(path)
-    print (url)
+    url=cache_mgr.get(url_name)
     if url:
         return redirect(url)
 
-    url = db_mgr.findMap(path)
+    url = db_mgr.findMap(url_name)
+    log_mgr.getLogger().info("after findmap")
+    log_mgr.getLogger().info(url)
+    log_mgr.getLogger().info("after findmap 2")
     if url:
-        cache_mgr.set(path,url)
+        cache_mgr.put(url_name,url['url'])
         return redirect(url['url'])
-    return jsonify({'status': 'fail', 'url': path, 'reason' : 'not found'})
+    return jsonify({'status': 'fail', 'url': url_name, 'reason' : 'not found'})
 
 
 if __name__ == '__main__':
