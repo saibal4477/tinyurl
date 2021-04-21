@@ -85,9 +85,11 @@ def delete_url():
     """Return a friendly HTTP greeting."""
     return 'Not implemented!'
 
+
 @app.route('/')
 def default_url():
     return "welcome to piddyurl"
+
 
 # @app.route('/', defaults={'path': ''})
 @app.route('/redirect')
