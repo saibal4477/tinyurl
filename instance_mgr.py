@@ -69,13 +69,14 @@ class InstanceManager:
 
         # if we haven't found any instance then let go this instance
         if self.instance_id == -1:
-            raise PiddyurlException('The web server is not initialized properly [all 62 instances are running] ', status_code=410)
+            raise PiddyurlException('The web server is not initialized properly [all 62 instances are running] ',
+                                    status_code=410)
 
         return self.instance_id
 
     def getLatest(self):
         self.__connect()
-        if  self.latest != '':
+        if self.latest != '':
             return self.latest
 
         try:
@@ -92,4 +93,3 @@ class InstanceManager:
             self.zk.set(path=self.zkpath + '/' + str(self.instance_id) + '/latest', value=self.latest.encode('ascii'))
         except KazooException as ex:
             raise PiddyurlException('Cannot get the latest field from the ZooKeeper [' + str(ex) + ']')
-

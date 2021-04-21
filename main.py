@@ -18,18 +18,15 @@ from flask import Flask, request, jsonify, redirect
 from instance_mgr import InstanceManager
 from piddy_exception import PiddyurlException
 from hash_gen import HashGenerator
-from db import DbManager, DBManagerHbase
+from db import DBManagerHbase
 from cache_mgr import CacheManager
 from log_manager import LogManager
-import logging
-import logstash
 
 # global instances
 instance_mgr = InstanceManager()
 db_mgr = DBManagerHbase()
-cache_mgr=CacheManager()
-log_mgr=LogManager()#'logstash')
-
+cache_mgr = CacheManager()
+log_mgr = LogManager()
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
 # called `app` in `main.py`.
@@ -40,6 +37,7 @@ app = Flask(__name__)
 def before_first_request_func():
     log_mgr.getLogger().info("Initialized instance")
 
+
 @app.errorhandler(PiddyurlException)
 def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
@@ -48,7 +46,7 @@ def handle_invalid_usage(error):
 
 
 @app.route('/create')
-def createURL():
+def create_url():
     """Return a friendly HTTP greeting."""
     # Check whether the database has one such entry
     url_name = request.args.get('url', default='*', type=str)
@@ -65,10 +63,10 @@ def createURL():
     latest = instance_mgr.getLatest()
 
     # check if it exists in db
-    url_map=db_mgr.checkEntry(url_name,user_id)
+    url_map = db_mgr.checkEntry(url_name, user_id)
     log_mgr.getLogger().info(url_map)
     if url_map is not None:
-        updated_url = 'http://' + request.host + '/' +  url_map['map_url']
+        updated_url = 'http://' + request.host + '/' + url_map['map_url']
         return jsonify({'status': 'success', 'url': url_name, 'piddyurl': updated_url})
 
     # generate the hash
@@ -83,37 +81,34 @@ def createURL():
 
 
 @app.route('/delete')
-def deleteURL():
+def delete_url():
     """Return a friendly HTTP greeting."""
-
-    return 'Hello World!'
+    return 'Not implemented!'
 
 @app.route('/')
-def defaultURL():
-    return "welcome"
+def default_url():
+    return "welcome to piddyurl"
 
 # @app.route('/', defaults={'path': ''})
 @app.route('/redirect')
-def redirectURL():
+def redirect_url():
     url_name = request.args.get('url', default='*', type=str)
-    log_mgr.getLogger().info('redirect-page:'+url_name)
+    log_mgr.getLogger().info('redirect-page with the URL:  ' + url_name)
     if url_name == '*':
         raise PiddyurlException('No URL is passed')
 
-    #return "hello world"
     # check the cache
-    url=cache_mgr.get(url_name)
+    url = cache_mgr.get(url_name)
     if url:
+        log_mgr.getLogger().info('redirect-page found from the cache:  ' + url_name + ':' + url)
         return redirect(url)
 
     url = db_mgr.findMap(url_name)
-    log_mgr.getLogger().info("after findmap")
     log_mgr.getLogger().info(url)
-    log_mgr.getLogger().info("after findmap 2")
     if url:
-        cache_mgr.put(url_name,url['url'])
+        cache_mgr.put(url_name, url['url'])
         return redirect(url['url'])
-    return jsonify({'status': 'fail', 'url': url_name, 'reason' : 'not found'})
+    return jsonify({'status': 'fail', 'url': url_name, 'reason': 'not found'})
 
 
 if __name__ == '__main__':
@@ -124,6 +119,5 @@ if __name__ == '__main__':
     os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'C:\\Users\\saiba\\system_design_projects\\tinyurl\\key.json'
 
     app.run(host='0.0.0.0', port=5000, debug=True)
-
 
 # [END gae_python38_app]
