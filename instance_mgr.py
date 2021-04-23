@@ -1,7 +1,6 @@
 from kazoo.client import KazooClient
 from kazoo.exceptions import NodeExistsError, KazooException
 from piddy_exception import PiddyurlException
-import logging
 import os
 
 
